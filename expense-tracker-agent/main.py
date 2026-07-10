@@ -1,5 +1,6 @@
 from google import genai
 import os
+from datetime import date
 from dotenv import load_dotenv
 from db import add_expense, get_total, list_expenses, delete_expense
 
@@ -24,8 +25,10 @@ while True:
         print("-----------Closing session----------")
         break
 
+    today_str = date.today().isoformat
+
     contents.append(
-        genai.types.Content(role="user", parts=[genai.types.Part(text=f"{user_query}")])
+        genai.types.Content(role="user", parts=[genai.types.Part(text=f"Today's date is {today_str}. {user_query}")])
     )
     
     response = client.models.generate_content(
