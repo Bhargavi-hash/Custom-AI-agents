@@ -178,6 +178,48 @@ def compare_periods(period_1_start: str, period_1_end: str,
         "total_hours_diff": round(stats_1["total_hours"] - stats_2["total_hours"], 2)
     }
 
+def find_free_time(date: str, duration_minutes: int, work_start_hour: int = 9, work_end_hour: int = 18) -> list[dict]:
+    """
+    Finds open time slots on a given day, at least `duration_minutes` long,
+    within working hours.
+    Args:
+        date: The day to check, YYYY-MM-DD
+        duration_minutes: Minimum length of free slot needed, in minutes
+        work_start_hour: Start of working hours (24-hour), default 9am
+        work_end_hour: End of working hours (24-hour), default 6pm
+    """
+    events = list_events(date, date)
+    # Parse every event's start/end into real datetime objects up front
+    parsed_events = []
+    for e in events:
+        parsed_events.append({
+            "start": datetime.fromisoformat(e["start"]),
+            "end": datetime.fromisoformat(e["end"])
+        })
+
+    parsed_events.sort(key=lambda x: x["start"])
+
+    day_start = datetime.fromisoformat(f"{date}T{work_start_hour:02d}:00:00")
+    day_end = datetime.fromisoformat(f"{date}T{work_end_hour:02d}:00:00")
+
+    free_slots = []
+    cursor = day_start   # tracks "the earliest point we haven't accounted for yet"
+
+    for event in parsed_events:
+        if event["start"] > cursor:
+            gap_minutes = (event["start"] - cursor).total_seconds() / 60
+            if gap_minutes >= duration_minutes:
+                free_slots.append({"start": cursor.isoformat(), "end": event["start"].isoformat()})
+        cursor = max(cursor, event["end"])   # move cursor past this event
+
+    # Check the final gap, after the last event, up to day_end
+    if day_end > cursor:
+        gap_minutes = (day_end - cursor).total_seconds() / 60
+        if gap_minutes >= duration_minutes:
+            free_slots.append({"start": cursor.isoformat(), "end": day_end.isoformat()})
+
+    return free_slots
+
 
 if __name__ == "__main__":
     # First, use the event_id printed from your create_event test
