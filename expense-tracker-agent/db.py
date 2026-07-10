@@ -2,7 +2,7 @@ import sqlite3
 
 DB_PATH = "expenses.db"
 
-def init_db():
+def init_db(DB_PATH=DB_PATH):
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
