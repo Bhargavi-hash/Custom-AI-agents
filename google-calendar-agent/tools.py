@@ -199,8 +199,10 @@ def find_free_time(date: str, duration_minutes: int, work_start_hour: int = 9, w
 
     parsed_events.sort(key=lambda x: x["start"])
 
-    day_start = datetime.fromisoformat(f"{date}T{work_start_hour:02d}:00:00")
-    day_end = datetime.fromisoformat(f"{date}T{work_end_hour:02d}:00:00")
+    local_tz = datetime.now().astimezone().tzinfo
+
+    day_start = datetime.fromisoformat(f"{date}T{work_start_hour:02d}:00:00").replace(tzinfo=local_tz)
+    day_end = datetime.fromisoformat(f"{date}T{work_end_hour:02d}:00:00").replace(tzinfo=local_tz)
 
     free_slots = []
     cursor = day_start   # tracks "the earliest point we haven't accounted for yet"
