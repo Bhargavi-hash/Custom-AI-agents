@@ -100,6 +100,40 @@ def list_expenses(category: str = None, month: str = None) -> list[dict]:
     except sqlite3.OperationalError as e:
         print(f"Fetch failed: {e}")
         return None
+    
+# in db.py
+def update_expense(expense_id: int, amount: float = None, category: str = None, date: str = None, note: str = None) -> bool:
+    """Update specific fields of an existing expense. Only provided fields are changed."""
+    fields = []
+    params = []
+    if amount is not None:
+        fields.append("amount = ?")
+        params.append(amount)
+    if category is not None:
+        fields.append("category = ?")
+        params.append(category)
+    if date is not None:
+        fields.append("date = ?")
+        params.append(date)
+    if note is not None:
+        fields.append("note = ?")
+        params.append(note)
+
+    if not fields:
+        return False  # nothing to update
+
+    params.append(expense_id)
+    sql = f"UPDATE expenses SET {', '.join(fields)} WHERE id = ?"
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            conn.commit()
+            return cursor.rowcount > 0
+    except sqlite3.OperationalError as e:
+        print(f"Update failed: {e}")
+        return False
 
 def delete_expense(expense_id: int) -> bool:
     """Delete by id, return True if a row was actually deleted."""
