@@ -124,12 +124,65 @@ def delete_event(event_id: str) -> dict:
     return {"deleted": True, "event_id": event_id}
 
 
+def get_meeting_stats(start_date: str, end_date: str) -> dict:
+    """
+    Computes meeting statistics for a date range: total meeting count,
+    total scheduled hours, and average meeting length.
+    Args:
+        start_date: Start of the range, in YYYY-MM-DD format
+        end_date: End of the range, in YYYY-MM-DD format
+    """
+    events = list_events(start_date, end_date)
+
+    meeting_count = 0
+    total_scheduled_hours = 0.0
+
+    for e in events:
+        start_dt = datetime.fromisoformat(e['start'])
+        end_dt = datetime.fromisoformat(e['end'])
+        duration = end_dt - start_dt
+        duration_hours = duration.total_seconds() / 3600
+
+        if duration_hours >= 24:
+            continue  # skip all-day events entirely -- not counted at all
+
+        meeting_count += 1
+        total_scheduled_hours += duration_hours
+
+    avg_meeting_minutes = (total_scheduled_hours / meeting_count * 60) if meeting_count > 0 else 0
+
+    return {
+        "meeting_count": meeting_count,
+        "total_hours": round(total_scheduled_hours, 2),
+        "avg_meeting_minutes": round(avg_meeting_minutes, 1)
+    }
+
+
+def compare_periods(period_1_start: str, period_1_end: str,
+                     period_2_start: str, period_2_end: str) -> dict:
+    """
+    Compares meeting load between two date ranges — e.g., this week vs. last week.
+    Args:
+        period_1_start: Start of the first period, YYYY-MM-DD
+        period_1_end: End of the first period, YYYY-MM-DD
+        period_2_start: Start of the second period, YYYY-MM-DD
+        period_2_end: End of the second period, YYYY-MM-DD
+    """
+    stats_1 = get_meeting_stats(period_1_start, period_1_end)
+    stats_2 = get_meeting_stats(period_2_start, period_2_end)
+
+    return {
+        "period_1": stats_1,
+        "period_2": stats_2,
+        "meeting_count_diff": stats_1["meeting_count"] - stats_2["meeting_count"],
+        "total_hours_diff": round(stats_1["total_hours"] - stats_2["total_hours"], 2)
+    }
+
+
 if __name__ == "__main__":
     # First, use the event_id printed from your create_event test
-    test_id = "sl9212sgv3ilksjpk4qmvgs1bk"
+    
+    stats = get_meeting_stats(start_date='2026-07-05', end_date='2026-07-12')
+    print("Stats:", stats)
 
-    updated = update_event(test_id, summary="Updated Test Event")
-    print("After update:", updated)
-
-    deleted = delete_event(test_id)
-    print("After delete:", deleted)
+    
